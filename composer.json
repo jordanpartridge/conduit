@@ -13,9 +13,8 @@
     ],
     "require": {
         "php": "^8.2.0",
-        "laravel-zero/framework": "^11.36.1",
-        "jordanpartridge/github-client": "*",
         "guzzlehttp/guzzle": "^7.8",
+        "laravel-zero/framework": "^11.36.1",
         "symfony/process": "^7.0"
     },
     "require-dev": {

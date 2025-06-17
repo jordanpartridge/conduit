@@ -1,5 +1,8 @@
 <?php
 
+use JordanPartridge\GithubClient\Facades\Github;
+use JordanPartridge\GithubClient\GithubClientServiceProvider;
+
 return [
 
     /*
@@ -54,7 +57,6 @@ return [
     */
 
     'providers' => [
-        App\Providers\AppServiceProvider::class,
-    ],
-
-];
+        App\Providers\AppServiceProvider::class
+    ]
+    ];
