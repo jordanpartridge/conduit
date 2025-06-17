@@ -1,60 +1,98 @@
-# Conduit
+# 🚀 Conduit v1.0.0
 
 > Your personal developer API & MCP integration engine - AI-ready GitHub CLI and beyond
 
-Conduit is a Laravel Zero-powered CLI that acts as your personal API gateway, starting with GitHub mastery but extensible to any service. It's designed to work seamlessly with both human developers and AI agents through the Model Context Protocol (MCP).
+[![Latest Version](https://img.shields.io/packagist/v/jordanpartridge/conduit.svg?style=flat-square)](https://packagist.org/packages/jordanpartridge/conduit)
+[![Total Downloads](https://img.shields.io/packagist/dt/jordanpartridge/conduit.svg?style=flat-square)](https://packagist.org/packages/jordanpartridge/conduit)
+[![License](https://img.shields.io/packagist/l/jordanpartridge/conduit.svg?style=flat-square)](https://packagist.org/packages/jordanpartridge/conduit)
 
-## Vision
+Conduit is a **modular, extensible CLI platform** built with Laravel Zero that transforms your development workflow. Starting with powerful GitHub integration, it features a revolutionary component system that makes adding new tools as simple as running `conduit install:service`.
 
-Conduit transforms how developers interact with their tools:
-- **GitHub Superpowers**: GitKraken-style visualizations and smart operations in your terminal
-- **MCP Integration Engine**: Spawn and manage MCP servers for any integration
-- **Personal API Gateway**: Register and unify all your services under one interface
-- **AI-Ready**: Built for both human and AI agent interaction from day one
+## ✨ What's New in v1.0.0
 
-## Features (Planned)
+### 🧩 **Modular Component System**
+- **Dynamic installation**: Add integrations on-demand without rebuilding
+- **GitHub discovery**: Auto-discover components via topics
+- **Clean lifecycle**: Install, configure, and remove components seamlessly
+- **Config-driven**: No database dependencies, pure configuration
 
-### GitHub Excellence
-- Interactive branch visualization
-- Smart conflict resolution
-- AI-powered commit messages
-- Visual diff tools in terminal
-- Workflow designer for GitHub Actions
+### 🐙 **GitHub Zero Integration** 
+- **Interactive workflows**: Rich Laravel Prompts UI for all operations
+- **Smart repository management**: Browse, clone, and manage repos with ease
+- **Environment automation**: Automatic `.env` setup with token validation
+- **Service provider magic**: Seamless Laravel Zero integration
 
-### MCP Integration
-- Auto-discovery of available MCPs
-- Health monitoring and auto-restart
-- Unified authentication
-- Rate limiting and caching
+## 🚀 Installation
 
-### Personal API Platform
-- Register any API endpoint
-- Natural language queries across all services
-- Unified search and commands
-- Extensible plugin system
-
-## Installation
-
+### Via Composer (Recommended)
 ```bash
 composer global require jordanpartridge/conduit
 ```
 
-## Usage
+### Via GitHub Releases
+```bash
+# Download latest PHAR
+curl -L https://github.com/jordanpartridge/conduit/releases/latest/download/conduit.phar -o conduit
+chmod +x conduit
+sudo mv conduit /usr/local/bin/conduit
+```
+
+### Development Setup
+```bash
+git clone https://github.com/jordanpartridge/conduit.git
+cd conduit
+composer install
+```
+
+## 🎯 Quick Start
 
 ```bash
-# GitHub operations
-conduit pr create --interactive
-conduit branch visualize
-conduit conflict resolve --smart
+# Install GitHub integration
+conduit install:github
 
-# MCP server management
-conduit serve github
-conduit serve --all
+# Browse your repositories interactively
+conduit repos --interactive
 
-# Personal API
-conduit register myapp --url=api.myapp.com
-conduit query "show me all critical issues across all projects"
+# Clone a repository with smart selection  
+conduit clone --interactive
+
+# Manage installed components
+conduit components
+
+# List all available commands
+conduit list
 ```
+
+## 🧩 Component Architecture
+
+Conduit's revolutionary component system allows you to:
+
+```bash
+# Discover available integrations
+conduit components
+
+# Install new integrations dynamically
+conduit install:github
+conduit install:docker    # Coming soon
+conduit install:aws       # Coming soon
+
+# Remove integrations cleanly
+conduit uninstall:github
+```
+
+### Available Components
+- **🐙 GitHub Zero**: Repository management, cloning, and exploration
+- **🐳 Docker** *(planned)*: Container management and orchestration
+- **☁️ AWS Toolkit** *(planned)*: Cloud infrastructure helpers
+- **🗄️ Database Tools** *(planned)*: Migration and seeding utilities
+
+## 🤖 AI-Ready Architecture
+
+Conduit is built from the ground up for AI integration:
+- **Structured commands**: Perfect for AI tool integration
+- **Rich metadata**: Commands expose detailed help and options  
+- **Context-aware**: Smart defaults based on project detection
+- **MCP Protocol ready**: Foundation for Model Context Protocol servers
 
 ## Development
 
