@@ -74,56 +74,16 @@ class InstallGitHubCommand extends Command
             return 0;
         }
 
-        // Install package with spinner
-        $packageInstalled = spin(
-            fn () => $this->installPackage(),
-            '📦 Installing GitHub Zero package...'
-        );
-
-        if (!$packageInstalled) {
-            warning('Failed to install GitHub Zero package');
-            return 1;
-        }
-
-        info('Package installed successfully!');
-
-        // Register component with ComponentManager
-        spin(
-            fn () => $this->registerComponent($manager),
-            '🔧 Registering component...'
-        );
-
-        info('Component registered successfully!');
-
-        // Setup GitHub token
-        $this->setupGitHubTokenInteractive();
-
-        // Test installation
-        $testPassed = spin(
-            fn () => $this->testInstallation(),
-            '🧪 Testing installation...'
-        );
-
-        if ($testPassed) {
-            $this->displaySuccess();
-        } else {
-            $this->displayFailure();
-            return 1;
-        }
-
-        return 0;
+        return $this->performInstallation($manager);
     }
 
     private function runFullInstallation(ComponentManager $manager): int
     {
-        // Show what will be installed
-        note('This installer will:');
-        $this->line('  📦 Install jordanpartridge/github-zero package');
-        $this->line('  🔧 Register component');
-        $this->line('  🔑 Setup GitHub token configuration');
-        $this->line('  🧪 Test the installation');
-        $this->newLine();
+        return $this->performInstallation($manager);
+    }
 
+    private function performInstallation(ComponentManager $manager): int
+    {
         // Install package with spinner
         $packageInstalled = spin(
             fn () => $this->installPackage(),
@@ -192,6 +152,24 @@ class InstallGitHubCommand extends Command
         $manager->register('github', $componentInfo, '^1.0');
     }
 
+    private function hasValidGitHubToken(): bool
+    {
+        $envPath = base_path('.env');
+        
+        if (!file_exists($envPath)) {
+            return false;
+        }
+
+        $envContent = file_get_contents($envPath);
+        
+        if (preg_match('/^GITHUB_TOKEN=(.+)$/m', $envContent, $matches)) {
+            $token = trim($matches[1]);
+            return !empty($token) && $token !== 'your_github_personal_access_token_here';
+        }
+
+        return false;
+    }
+
     private function installPackage(): bool
     {
         $process = new Process(['composer', 'require', 'jordanpartridge/github-zero'], base_path());
@@ -208,36 +186,6 @@ class InstallGitHubCommand extends Command
         return $process->isSuccessful();
     }
 
-    private function configureServiceProvider(): void
-    {
-        $configPath = config_path('app.php');
-        $config = file_get_contents($configPath);
-        
-        $serviceProvider = 'JordanPartridge\\GitHubZero\\GitHubZeroServiceProvider::class';
-        
-        // Check if already added
-        if (strpos($config, $serviceProvider) !== false) {
-            $this->comment('Service provider already configured');
-            return;
-        }
-
-        // Add service provider to the providers array
-        $pattern = "/'providers'\s*=>\s*\[([^\]]*)\]/s";
-        
-        if (preg_match($pattern, $config, $matches)) {
-            $providersContent = $matches[1];
-            
-            // Add the service provider with proper formatting
-            $newProvidersContent = rtrim($providersContent) . 
-                "\n        " . $serviceProvider . ",\n    ";
-            
-            $newConfig = preg_replace($pattern, "'providers' => [" . $newProvidersContent . "]", $config);
-            
-            if ($newConfig && $newConfig !== $config) {
-                file_put_contents($configPath, $newConfig);
-            }
-        }
-    }
 
     private function setupGitHubToken(): void
     {
@@ -267,7 +215,7 @@ class InstallGitHubCommand extends Command
     {
         $this->setupGitHubToken(); // Create .env if needed
 
-        $hasToken = !empty(env('GITHUB_TOKEN')) && env('GITHUB_TOKEN') !== 'your_github_personal_access_token_here';
+        $hasToken = $this->hasValidGitHubToken();
 
         if ($hasToken) {
             info('GitHub token is already configured!');
@@ -338,7 +286,7 @@ class InstallGitHubCommand extends Command
         $tests = [
             'Package exists' => fn() => $this->isAlreadyInstalled(),
             'Commands available' => fn() => $this->testInstallation(),
-            'GitHub token configured' => fn() => !empty(env('GITHUB_TOKEN')) && env('GITHUB_TOKEN') !== 'your_github_personal_access_token_here',
+            'GitHub token configured' => fn() => $this->hasValidGitHubToken(),
         ];
 
         $allPassed = true;

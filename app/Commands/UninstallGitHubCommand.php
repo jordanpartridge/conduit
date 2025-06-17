@@ -186,8 +186,8 @@ class UninstallGitHubCommand extends Command
         $envContent = preg_replace('/^# GitHub Configuration.*$/m', '', $envContent);
         $envContent = preg_replace('/^GITHUB_BASE_URL=.*$/m', '', $envContent);
         
-        // Clean up empty lines
-        $envContent = preg_replace('/\n\s*\n\s*\n/', "\n\n", $envContent);
+        // Clean up multiple empty lines
+        $envContent = preg_replace('/(\n\s*){3,}/', "\n\n", $envContent);
         
         file_put_contents($envPath, $envContent);
         info('GitHub token removed from .env file');

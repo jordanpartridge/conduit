@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    GithubZero\Providers\GithubZeroServiceProvider::class,
+    JordanPartridge\GitHubZero\GitHubZeroServiceProvider::class,
 ];

@@ -100,14 +100,14 @@ public function boot(): void
 
 ### Issue: Package not found during installation
 **Solution**: Package not yet on Packagist or version issue
-- Check if package exists: https://packagist.org/packages/jordanpartridge/github-zero
+- Check if package exists: [jordanpartridge/github-zero on Packagist](https://packagist.org/packages/jordanpartridge/github-zero)
 - Try: `composer require jordanpartridge/github-zero:dev-main` for development version
 
 ## Reporting Issues
 
 If you encounter issues with github-zero integration into Conduit:
 
-1. **Check existing issues**: https://github.com/jordanpartridge/github-zero/issues
+1. **Check existing issues**: [GitHub Issues](https://github.com/jordanpartridge/github-zero/issues)
 
 2. **Create a new issue** with:
    - **Title**: "Conduit Integration: [Brief description]"
