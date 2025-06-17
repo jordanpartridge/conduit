@@ -23,8 +23,7 @@ class InstallGitHubCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'install:github 
-                            {--force : Force installation even if already installed}';
+    protected $signature = 'install:github {--force : Force installation even if already installed}';
 
     /**
      * The console command description.
@@ -172,7 +171,7 @@ class InstallGitHubCommand extends Command
 
     private function installPackage(): bool
     {
-        $process = new Process(['composer', 'require', 'jordanpartridge/github-zero'], base_path());
+        $process = new Process(['composer', 'require', '--no-interaction', 'jordanpartridge/github-zero'], base_path());
         $process->setTimeout(300); // 5 minutes
         
         $process->run(function ($type, $buffer) {
@@ -255,7 +254,16 @@ class InstallGitHubCommand extends Command
         if ($token) {
             $envPath = base_path('.env');
             $envContent = file_get_contents($envPath);
-            $envContent = preg_replace('/GITHUB_TOKEN=.*/', 'GITHUB_TOKEN=' . $token, $envContent);
+            
+            // Handle token update more robustly
+            if (preg_match('/^GITHUB_TOKEN=.*$/m', $envContent)) {
+                // Update existing token
+                $envContent = preg_replace('/^GITHUB_TOKEN=.*$/m', 'GITHUB_TOKEN=' . $token, $envContent);
+            } else {
+                // Append new token if not found
+                $envContent .= "\nGITHUB_TOKEN=" . $token . "\n";
+            }
+            
             file_put_contents($envPath, $envContent);
             info('GitHub token saved successfully!');
         } else {

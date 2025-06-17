@@ -137,7 +137,7 @@ class UninstallGitHubCommand extends Command
 
     private function removePackage(): bool
     {
-        $process = new Process(['composer', 'remove', 'jordanpartridge/github-zero'], base_path());
+        $process = new Process(['composer', 'remove', '--no-interaction', 'jordanpartridge/github-zero'], base_path());
         $process->setTimeout(300);
         
         $process->run();
