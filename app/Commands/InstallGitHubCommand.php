@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\ComponentManager;
 use Illuminate\Console\Scheduling\Schedule;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Process\Process;
@@ -35,11 +36,11 @@ class InstallGitHubCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(ComponentManager $manager)
     {
         $this->displayWelcome();
 
-        if ($this->isAlreadyInstalled() && !$this->option('force')) {
+        if ($manager->isInstalled('github') && !$this->option('force')) {
             info('GitHub Zero is already installed!');
             
             $action = select(
@@ -86,13 +87,13 @@ class InstallGitHubCommand extends Command
 
         info('Package installed successfully!');
 
-        // Configure service provider with spinner
+        // Register component with ComponentManager
         spin(
-            fn () => $this->configureServiceProvider(),
-            '🔧 Configuring service provider...'
+            fn () => $this->registerComponent($manager),
+            '🔧 Registering component...'
         );
 
-        info('Service provider configured!');
+        info('Component registered successfully!');
 
         // Setup GitHub token
         $this->setupGitHubTokenInteractive();
@@ -113,12 +114,12 @@ class InstallGitHubCommand extends Command
         return 0;
     }
 
-    private function runFullInstallation(): int
+    private function runFullInstallation(ComponentManager $manager): int
     {
         // Show what will be installed
         note('This installer will:');
         $this->line('  📦 Install jordanpartridge/github-zero package');
-        $this->line('  🔧 Configure service provider');
+        $this->line('  🔧 Register component');
         $this->line('  🔑 Setup GitHub token configuration');
         $this->line('  🧪 Test the installation');
         $this->newLine();
@@ -136,13 +137,13 @@ class InstallGitHubCommand extends Command
 
         info('Package installed successfully!');
 
-        // Configure service provider with spinner
+        // Register component with ComponentManager
         spin(
-            fn () => $this->configureServiceProvider(),
-            '🔧 Configuring service provider...'
+            fn () => $this->registerComponent($manager),
+            '🔧 Registering component...'
         );
 
-        info('Service provider configured!');
+        info('Component registered successfully!');
 
         // Setup GitHub token
         $this->setupGitHubTokenInteractive();
@@ -185,9 +186,10 @@ class InstallGitHubCommand extends Command
         HTML);
     }
 
-    private function isAlreadyInstalled(): bool
+    private function registerComponent(ComponentManager $manager): void
     {
-        return file_exists(base_path('vendor/jordanpartridge/github-zero'));
+        $componentInfo = config('components.registry.github', []);
+        $manager->register('github', $componentInfo, '^1.0');
     }
 
     private function installPackage(): bool
@@ -359,7 +361,7 @@ class InstallGitHubCommand extends Command
             
             if (confirm('Would you like to run the full installation to fix issues?', true)) {
                 // Force reinstallation by bypassing the already-installed check
-                return $this->runFullInstallation();
+                return $this->runFullInstallation(app(ComponentManager::class));
             }
             return 1;
         }

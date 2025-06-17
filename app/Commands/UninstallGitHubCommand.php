@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\ComponentManager;
 use Illuminate\Console\Scheduling\Schedule;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Process\Process;
@@ -34,11 +35,11 @@ class UninstallGitHubCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(ComponentManager $manager)
     {
         $this->displayWelcome();
 
-        if (!$this->isGitHubZeroInstalled()) {
+        if (!$manager->isInstalled('github')) {
             info('GitHub Zero is not currently installed');
             return 0;
         }
@@ -69,13 +70,13 @@ class UninstallGitHubCommand extends Command
             }
         }
 
-        // Remove service provider first
+        // Unregister component first
         spin(
-            fn () => $this->removeServiceProvider(),
-            '🔧 Removing service provider...'
+            fn () => $manager->unregister('github'),
+            '🔧 Unregistering component...'
         );
 
-        info('Service provider removed');
+        info('Component unregistered');
 
         // Remove package
         $packageRemoved = spin(
@@ -132,37 +133,7 @@ class UninstallGitHubCommand extends Command
         HTML);
     }
 
-    private function isGitHubZeroInstalled(): bool
-    {
-        return file_exists(base_path('vendor/jordanpartridge/github-zero'));
-    }
 
-    private function removeServiceProvider(): bool
-    {
-        $configPath = config_path('app.php');
-        
-        if (!file_exists($configPath)) {
-            return false;
-        }
-
-        $config = file_get_contents($configPath);
-        
-        // More robust pattern to match the service provider line with various whitespace/indentation
-        $patterns = [
-            '/\s*JordanPartridge\\\\GitHubZero\\\\GitHubZeroServiceProvider::class,?\s*\n?/',
-            '/,?\s*JordanPartridge\\\\GitHubZero\\\\GitHubZeroServiceProvider::class\s*,?\s*\n?/',
-        ];
-        
-        foreach ($patterns as $pattern) {
-            $config = preg_replace($pattern, '', $config);
-        }
-        
-        // Clean up any double commas or trailing commas in the providers array
-        $config = preg_replace('/,\s*,/', ',', $config);
-        $config = preg_replace('/,\s*\]/', "\n    ]", $config);
-        
-        return file_put_contents($configPath, $config) !== false;
-    }
 
     private function removePackage(): bool
     {
@@ -239,7 +210,7 @@ class UninstallGitHubCommand extends Command
     {
         try {
             // Test that package is gone
-            if ($this->isGitHubZeroInstalled()) {
+            if (file_exists(base_path('vendor/jordanpartridge/github-zero'))) {
                 return false;
             }
 
