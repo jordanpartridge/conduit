@@ -1,5 +1,7 @@
 <?php
 
+use App\Commands\InspireCommand;
+
 return [
 
     /*
@@ -63,6 +65,20 @@ return [
         Illuminate\Console\Scheduling\ScheduleFinishCommand::class,
         Illuminate\Foundation\Console\VendorPublishCommand::class,
         LaravelZero\Framework\Commands\StubPublishCommand::class,
+        
+        // GitHub package utility commands
+        JordanPartridge\GithubClient\Commands\GithubClientCommand::class,
+        
+        // Development commands - accessible via components command
+        App\Commands\InstallGitHubCommand::class,
+        App\Commands\UninstallGitHubCommand::class,
+        
+        // Laravel Zero development commands
+        LaravelZero\Framework\Commands\BuildCommand::class,
+        LaravelZero\Framework\Commands\RenameCommand::class,
+        LaravelZero\Framework\Commands\MakeCommand::class,
+        LaravelZero\Framework\Commands\TestMakeCommand::class,
+        LaravelZero\Framework\Commands\InstallCommand::class,
     ],
 
     /*
