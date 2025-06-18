@@ -219,12 +219,23 @@ class ComponentsCommand extends Command
             $this->line("Package: {$component['full_name']}");
             $this->line("Description: {$component['description']}");
             
-            // Step 1: Install via Composer
+            // Step 1: Install via Composer  
             $this->info("📦 Installing Composer package...");
-            $composerResult = \Symfony\Component\Process\Process::fromShellCommandline(
-                "composer require {$component['full_name']} --no-interaction --no-progress"
-            );
+            
+            // Validate package name for security
+            $this->validatePackageName($component['full_name']);
+            
+            // Use secure array-based Process to prevent command injection
+            $composerResult = new \Symfony\Component\Process\Process([
+                'composer',
+                'require',
+                $component['full_name'],
+                '--no-interaction',
+                '--no-progress',
+                '--prefer-dist'
+            ]);
             $composerResult->setTimeout(300); // 5 minute timeout
+            $composerResult->setWorkingDirectory(base_path());
             $composerResult->run();
             
             if (!$composerResult->isSuccessful()) {
@@ -462,6 +473,25 @@ class ComponentsCommand extends Command
         
         // Check global interactive mode setting (defaults to true)
         return $manager->getGlobalSetting('interactive_mode', true);
+    }
+
+    /**
+     * Validate package name for security (prevents command injection)
+     */
+    private function validatePackageName(string $packageName): void
+    {
+        // Composer package naming conventions: vendor/package with alphanumeric, hyphens, underscores, dots
+        if (!preg_match('/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9]([_.-]?[a-z0-9]+)*$/', $packageName)) {
+            throw new \InvalidArgumentException(
+                "Invalid package name format: {$packageName}. " .
+                "Must follow vendor/package naming convention."
+            );
+        }
+        
+        // Additional length check to prevent abuse
+        if (strlen($packageName) > 100) {
+            throw new \InvalidArgumentException("Package name too long: {$packageName}");
+        }
     }
 
     /**
