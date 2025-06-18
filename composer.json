@@ -8,12 +8,13 @@
     "authors": [
         {
             "name": "Jordan Partridge",
-            "email": "jordan@example.com"
+            "email": "jordan.l.partridge@gmail.com"
         }
     ],
     "require": {
         "php": "^8.2.0",
         "guzzlehttp/guzzle": "^7.8",
+        "jordanpartridge/github-zero": "^1.0",
         "laravel-zero/framework": "^11.36.1",
         "symfony/process": "^7.0"
     },

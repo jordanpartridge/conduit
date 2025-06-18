@@ -6,9 +6,15 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
 use Carbon\Carbon;
 
+/**
+ * Service for managing Conduit components
+ * 
+ * Handles component discovery, installation, registration, and lifecycle management.
+ * Components are external packages that extend Conduit through service providers.
+ */
 class ComponentManager
 {
     protected string $componentsConfigPath;
@@ -64,37 +70,127 @@ class ComponentManager
         $this->writeComponentsConfig(['installed' => $installed]);
     }
 
-    public function discoverFromGitHub(): array
+    public function discoverComponents(): array
     {
         $topic = config('components.discovery.github_topic', 'conduit-component');
         
         try {
-            $response = Http::get("https://api.github.com/search/repositories", [
-                'q' => "topic:{$topic}",
-                'sort' => 'updated',
-                'order' => 'desc'
+            $client = new Client([
+                'timeout' => 30,
+                'headers' => [
+                    'User-Agent' => 'Conduit/1.0',
+                    'Accept' => 'application/vnd.github.v3+json'
+                ]
+            ]);
+            
+            $response = $client->get('https://api.github.com/search/repositories', [
+                'query' => [
+                    'q' => "topic:{$topic}",
+                    'sort' => 'updated', 
+                    'order' => 'desc',
+                    'per_page' => 50 // Limit results
+                ]
             ]);
 
-            if (!$response->successful()) {
+            if ($response->getStatusCode() !== 200) {
+                error_log("GitHub API Error: " . $response->getStatusCode() . " " . $response->getBody());
+                
+                // Try fallback to local registry if configured
+                if (config('components.discovery.fallback_to_local', false)) {
+                    return $this->getLocalRegistry();
+                }
+                
                 return [];
             }
 
-            return collect($response->json()['items'] ?? [])
+            $data = json_decode($response->getBody()->getContents(), true);
+            
+            if (!isset($data['items'])) {
+                error_log("GitHub API: No items in response: " . json_encode($data));
+                return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
+            }
+
+            $components = collect($data['items'])
+                ->filter(function ($repo) {
+                    // Filter out archived or disabled repos
+                    return !($repo['archived'] ?? false) && !($repo['disabled'] ?? false);
+                })
                 ->map(function ($repo) {
                     return [
                         'name' => $repo['name'],
                         'full_name' => $repo['full_name'],
-                        'description' => $repo['description'],
+                        'description' => $repo['description'] ?? 'No description available',
                         'url' => $repo['html_url'],
                         'topics' => $repo['topics'] ?? [],
                         'updated_at' => $repo['updated_at'],
-                        'stars' => $repo['stargazers_count'],
+                        'stars' => $repo['stargazers_count'] ?? 0,
+                        'language' => $repo['language'] ?? 'Unknown',
+                        'license' => $repo['license']['name'] ?? 'No license',
                     ];
                 })
                 ->toArray();
+
+            // Log discovery success
+            error_log("Component discovery: Found " . count($components) . " components");
+            
+            return $components;
+            
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            error_log("GitHub API Request failed: " . $e->getMessage());
+            
+            // Check if it's a rate limit issue
+            if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 403) {
+                error_log("GitHub API rate limit exceeded");
+            }
+            
+            return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
+            
         } catch (\Exception $e) {
-            return [];
+            error_log("Component discovery error: " . $e->getMessage());
+            return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
         }
+    }
+
+    /**
+     * Get components from local registry as fallback
+     */
+    private function getLocalRegistry(): array
+    {
+        $registry = config('components.registry', []);
+        
+        return collect($registry)->map(function ($component, $name) {
+            return array_merge($component, [
+                'name' => $name,
+                'full_name' => $component['package'] ?? $name,
+                'source' => 'local_registry'
+            ]);
+        })->values()->toArray();
+    }
+
+    /**
+     * Get a global setting value
+     */
+    public function getGlobalSetting(string $key, mixed $default = null): mixed
+    {
+        return config("components.settings.{$key}", $default);
+    }
+
+    /**
+     * Update a global setting value
+     */
+    public function updateGlobalSetting(string $key, mixed $value): void
+    {
+        $config = config('components', []);
+        $config['settings'][$key] = $value;
+        $this->writeComponentsConfig($config);
+    }
+
+    /**
+     * Get all global settings
+     */
+    public function getGlobalSettings(): array
+    {
+        return config('components.settings', []);
     }
 
     protected function updateComponentsConfig(string $name, array $componentInfo): void
