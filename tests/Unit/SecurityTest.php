@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Commands\ComponentsCommand;
+use App\Services\SecurePackageInstaller;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -10,8 +10,8 @@ class SecurityTest extends TestCase
 {
     public function test_package_name_validation_prevents_command_injection()
     {
-        $command = new ComponentsCommand();
-        $reflection = new ReflectionClass($command);
+        $installer = new SecurePackageInstaller();
+        $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
 
@@ -27,14 +27,14 @@ class SecurityTest extends TestCase
 
         foreach ($maliciousInputs as $maliciousInput) {
             $this->expectException(\InvalidArgumentException::class);
-            $method->invoke($command, $maliciousInput);
+            $method->invoke($installer, $maliciousInput);
         }
     }
 
     public function test_package_name_validation_accepts_valid_names()
     {
-        $command = new ComponentsCommand();
-        $reflection = new ReflectionClass($command);
+        $installer = new SecurePackageInstaller();
+        $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
 
@@ -50,15 +50,15 @@ class SecurityTest extends TestCase
 
         foreach ($validInputs as $validInput) {
             // Should not throw exception
-            $method->invoke($command, $validInput);
+            $method->invoke($installer, $validInput);
             $this->assertTrue(true); // Assertion to confirm no exception
         }
     }
 
     public function test_package_name_validation_rejects_invalid_formats()
     {
-        $command = new ComponentsCommand();
-        $reflection = new ReflectionClass($command);
+        $installer = new SecurePackageInstaller();
+        $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
 
@@ -76,20 +76,31 @@ class SecurityTest extends TestCase
 
         foreach ($invalidInputs as $invalidInput) {
             $this->expectException(\InvalidArgumentException::class);
-            $method->invoke($command, $invalidInput);
+            $method->invoke($installer, $invalidInput);
         }
     }
 
-    public function test_package_verification_prevents_unauthorized_packages()
+    public function test_secure_process_execution_prevents_injection()
     {
-        // This would require mocking HTTP requests and command output
-        // For now, we'll test the validation logic works
-        $this->assertTrue(true);
+        $installer = new SecurePackageInstaller();
         
-        // TODO: Add proper integration test with HTTP mocking
-        // The verification logic checks:
-        // 1. Package exists on Packagist (HTTP call)
-        // 2. Package has 'conduit-component' topic
-        // 3. Throws RuntimeException if either fails
+        // Test that the installer uses secure process execution
+        // We can't easily test the actual process execution without side effects,
+        // but we can verify the validation happens before execution
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $installer->install(['full_name' => 'malicious; rm -rf /']);
+    }
+
+    public function test_service_layer_separation()
+    {
+        // Test that our services are properly separated
+        $installer = new SecurePackageInstaller();
+        $this->assertInstanceOf(SecurePackageInstaller::class, $installer);
+        
+        // Verify key security methods exist
+        $reflection = new ReflectionClass($installer);
+        $this->assertTrue($reflection->hasMethod('validatePackageName'));
+        $this->assertTrue($reflection->hasMethod('verifyPackageEligibility'));
     }
 }

@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-
+        // Register component installation services
+        $this->app->singleton(\App\Services\SecurePackageInstaller::class);
+        $this->app->singleton(\App\Services\ServiceProviderDetector::class);
+        $this->app->singleton(\App\Services\ComponentInstallationService::class);
     }
 }
