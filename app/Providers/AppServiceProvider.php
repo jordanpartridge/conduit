@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\ComponentInstallationService;
+use App\Services\SecurePackageInstaller;
+use App\Services\ServiceProviderDetector;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,8 +23,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register component installation services
-        $this->app->singleton(\App\Services\SecurePackageInstaller::class);
-        $this->app->singleton(\App\Services\ServiceProviderDetector::class);
-        $this->app->singleton(\App\Services\ComponentInstallationService::class);
+        $this->app->singleton(SecurePackageInstaller::class);
+        $this->app->singleton(ServiceProviderDetector::class);
+        $this->app->singleton(ComponentInstallationService::class);
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Symfony\Component\Process\Process;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -39,21 +39,19 @@ class SecurePackageInstaller
     {
         $this->validatePackageName($packageName);
         
-        $process = new Process([
-            'composer',
-            'remove',
-            $packageName,
-            '--no-interaction'
-        ]);
-        
-        $process->setTimeout($this->timeout);
-        $process->setWorkingDirectory(base_path());
-        $process->run();
+        $result = Process::timeout($this->timeout)
+            ->path(base_path())
+            ->run([
+                'composer',
+                'remove',
+                $packageName,
+                '--no-interaction'
+            ]);
         
         return new ProcessResult(
-            $process->isSuccessful(),
-            $process->getOutput(),
-            $process->getErrorOutput()
+            $result->successful(),
+            $result->output(),
+            $result->errorOutput()
         );
     }
 
@@ -115,23 +113,21 @@ class SecurePackageInstaller
      */
     private function executeComposerInstall(string $packageName): ProcessResult
     {
-        $process = new Process([
-            'composer',
-            'require',
-            $packageName,
-            '--no-interaction',
-            '--no-progress',
-            '--prefer-dist'
-        ]);
-        
-        $process->setTimeout($this->timeout);
-        $process->setWorkingDirectory(base_path());
-        $process->run();
+        $result = Process::timeout($this->timeout)
+            ->path(base_path())
+            ->run([
+                'composer',
+                'require',
+                $packageName,
+                '--no-interaction',
+                '--no-progress',
+                '--prefer-dist'
+            ]);
         
         return new ProcessResult(
-            $process->isSuccessful(),
-            $process->getOutput(),
-            $process->getErrorOutput()
+            $result->successful(),
+            $result->output(),
+            $result->errorOutput()
         );
     }
 }
