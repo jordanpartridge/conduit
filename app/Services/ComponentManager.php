@@ -64,7 +64,7 @@ class ComponentManager
         $this->writeComponentsConfig(['installed' => $installed]);
     }
 
-    public function discoverFromGitHub(): array
+    public function discoverComponents(): array
     {
         $topic = config('components.discovery.github_topic', 'conduit-component');
         
