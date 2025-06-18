@@ -3,6 +3,7 @@
 namespace App\Commands;
 
 use App\Services\ComponentManager;
+use App\Services\ComponentInstallationService;
 use LaravelZero\Framework\Commands\Command;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\table;
@@ -24,7 +25,7 @@ class ComponentsCommand extends Command
                             {--non-interactive : Run in non-interactive mode}';
     protected $description = 'Manage Conduit components';
 
-    public function handle(ComponentManager $manager): int
+    public function handle(ComponentManager $manager, ComponentInstallationService $installer): int
     {
         try {
             $action = $this->argument('action');
@@ -57,8 +58,8 @@ class ComponentsCommand extends Command
             return match ($action) {
                 'list' => $this->listInstalled($manager),
                 'discover' => $this->discoverComponents($manager),
-                'install' => $this->installComponent($manager),
-                'uninstall' => $this->uninstallComponent($manager),
+                'install' => $this->installComponent($manager, $installer),
+                'uninstall' => $this->uninstallComponent($manager, $installer),
             };
         } catch (\Exception $e) {
             $this->error('An error occurred: ' . $e->getMessage());
@@ -142,7 +143,7 @@ class ComponentsCommand extends Command
         return Command::SUCCESS;
     }
 
-    protected function installComponent(ComponentManager $manager): int
+    protected function installComponent(ComponentManager $manager, ComponentInstallationService $installer): int
     {
         try {
             $componentName = $this->argument('component');
@@ -213,80 +214,38 @@ class ComponentsCommand extends Command
                 }
             }
             
-            // Install the actual Composer package
+            // Install using the service
             $component = $availableComponents[$componentName];
             $this->info("Installing component '{$componentName}'...");
             $this->line("Package: {$component['full_name']}");
             $this->line("Description: {$component['description']}");
             
-            // Step 1: Install via Composer  
-            $this->info("📦 Installing Composer package...");
+            $result = $installer->installComponent($componentName, $component);
             
-            // Validate package name for security
-            $this->validatePackageName($component['full_name']);
-            
-            // Verify package exists and has conduit-component topic
-            $this->verifyPackageEligibility($component);
-            
-            // Use secure array-based Process to prevent command injection
-            $composerResult = new \Symfony\Component\Process\Process([
-                'composer',
-                'require',
-                $component['full_name'],
-                '--no-interaction',
-                '--no-progress',
-                '--prefer-dist'
-            ]);
-            $composerResult->setTimeout(300); // 5 minute timeout
-            $composerResult->setWorkingDirectory(base_path());
-            $composerResult->run();
-            
-            if (!$composerResult->isSuccessful()) {
-                $this->error("Failed to install Composer package:");
-                $this->line($composerResult->getErrorOutput());
+            if (!$result->isSuccessful()) {
+                $this->error("Failed to install component:");
+                $this->line($result->getMessage());
                 
                 // Provide helpful guidance based on common errors
-                $errorOutput = $composerResult->getErrorOutput();
-                if (str_contains($errorOutput, 'could not be found')) {
-                    $this->warn("💡 The package may not exist or be misspelled.");
-                } elseif (str_contains($errorOutput, 'version constraints')) {
-                    $this->warn("💡 There may be version compatibility issues.");
-                } elseif (str_contains($errorOutput, 'timeout')) {
-                    $this->warn("💡 Network timeout - try again with a better connection.");
+                if ($result->getProcessResult()) {
+                    $errorOutput = $result->getProcessResult()->getErrorOutput();
+                    if (str_contains($errorOutput, 'could not be found')) {
+                        $this->warn("💡 The package may not exist or be misspelled.");
+                    } elseif (str_contains($errorOutput, 'version constraints')) {
+                        $this->warn("💡 There may be version compatibility issues.");
+                    } elseif (str_contains($errorOutput, 'timeout')) {
+                        $this->warn("💡 Network timeout - try again with a better connection.");
+                    }
                 }
                 
                 return Command::FAILURE;
             }
             
-            $this->info("✅ Composer package installed successfully");
-            
-            // Step 2: Detect service providers from installed package
-            $this->info("🔧 Detecting service providers...");
-            $serviceProviders = $this->detectServiceProviders($component['full_name']);
-            
-            // Step 3: Get commands from service provider (if possible)
-            $commands = $this->detectCommands($serviceProviders);
-            
-            // Step 4: Convert to component info format
-            $componentInfo = [
-                'package' => $component['full_name'],
-                'description' => $component['description'],
-                'commands' => $commands,
-                'env_vars' => [], // TODO: Detect from package
-                'service_providers' => $serviceProviders,
-                'topics' => $component['topics'],
-                'url' => $component['url'],
-                'stars' => $component['stars'],
-            ];
-            
-            // Step 5: Register the component with service providers
-            $manager->register($componentName, $componentInfo);
-            
             $this->info("✅ Successfully installed and registered component '{$componentName}'.");
             
-            if (!empty($commands)) {
+            if (!empty($result->getCommands())) {
                 $this->info("📋 New commands available:");
-                foreach ($commands as $command) {
+                foreach ($result->getCommands() as $command) {
                     $this->line("  - conduit {$command}");
                 }
             }
@@ -299,7 +258,7 @@ class ComponentsCommand extends Command
         }
     }
 
-    protected function uninstallComponent(ComponentManager $manager): int
+    protected function uninstallComponent(ComponentManager $manager, ComponentInstallationService $installer): int
     {
         try {
             $componentName = $this->argument('component');
@@ -342,9 +301,12 @@ class ComponentsCommand extends Command
             }
             
             // Uninstall the component
-            $manager->unregister($componentName);
-            
-            $this->info("Successfully uninstalled component '{$componentName}'.");
+            if ($installer->uninstallComponent($componentName)) {
+                $this->info("Successfully uninstalled component '{$componentName}'.");
+            } else {
+                $this->error("Failed to uninstall component '{$componentName}'.");
+                return Command::FAILURE;
+            }
             return Command::SUCCESS;
             
         } catch (\Exception $e) {
@@ -354,118 +316,7 @@ class ComponentsCommand extends Command
     }
 
     /**
-     * Detect service providers from an installed Composer package
-     */
-    private function detectServiceProviders(string $packageName): array
-    {
-        try {
-            // Read the package's composer.json
-            $vendorPath = base_path("vendor/{$packageName}/composer.json");
-            
-            if (!file_exists($vendorPath)) {
-                return [];
-            }
-            
-            $composerJson = json_decode(file_get_contents($vendorPath), true);
-            
-            // Check Laravel extra.laravel.providers
-            $providers = $composerJson['extra']['laravel']['providers'] ?? [];
-            
-            return is_array($providers) ? $providers : [];
-        } catch (\Exception $e) {
-            error_log("Error detecting service providers: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Detect commands provided by service providers
-     * 
-     * Note: Command detection is complex because Laravel Zero service providers
-     * register commands during boot phase. We use a discovery approach that
-     * checks for command files in the package structure.
-     */
-    private function detectCommands(array $serviceProviders): array
-    {
-        $commands = [];
-        
-        foreach ($serviceProviders as $provider) {
-            try {
-                // Extract package name from provider namespace
-                $packageCommands = $this->discoverCommandsFromProvider($provider);
-                $commands = array_merge($commands, $packageCommands);
-                
-            } catch (\Exception $e) {
-                error_log("Error detecting commands from provider {$provider}: " . $e->getMessage());
-            }
-        }
-        
-        return array_unique($commands);
-    }
-
-    /**
-     * Discover commands from a service provider by examining package structure
-     */
-    private function discoverCommandsFromProvider(string $provider): array
-    {
-        // Extract package namespace to find vendor directory
-        $parts = explode('\\', $provider);
-        if (count($parts) < 2) {
-            return [];
-        }
-        
-        $vendor = strtolower($parts[0]);
-        $package = strtolower($parts[1]);
-        
-        // Look for command files in common locations
-        $possiblePaths = [
-            base_path("vendor/{$vendor}/{$package}/src/Commands"),
-            base_path("vendor/{$vendor}/{$package}/app/Commands"),
-        ];
-        
-        $commands = [];
-        foreach ($possiblePaths as $path) {
-            if (is_dir($path)) {
-                $commands = array_merge($commands, $this->extractCommandsFromDirectory($path));
-            }
-        }
-        
-        return $commands;
-    }
-
-    /**
-     * Extract command signatures from PHP command files
-     */
-    private function extractCommandsFromDirectory(string $directory): array
-    {
-        $commands = [];
-        
-        try {
-            $files = glob($directory . '/*.php');
-            foreach ($files as $file) {
-                $content = file_get_contents($file);
-                
-                // Look for command signatures using regex
-                if (preg_match('/protected\s+\$signature\s*=\s*[\'"]([^\'"\s]+)/', $content, $matches)) {
-                    $signature = $matches[1];
-                    // Extract just the command name (before any arguments/options)
-                    $commandName = explode(' ', $signature)[0];
-                    if (!empty($commandName)) {
-                        $commands[] = $commandName;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            error_log("Error reading command directory {$directory}: " . $e->getMessage());
-        }
-        
-        return $commands;
-    }
-
-    /**
      * Determine if commands should run in interactive mode
-     * 
-     * Simple check: respect global setting, allow --non-interactive flag to override
      */
     private function shouldBeInteractive(ComponentManager $manager): bool
     {
@@ -476,66 +327,6 @@ class ComponentsCommand extends Command
         
         // Check global interactive mode setting (defaults to true)
         return $manager->getGlobalSetting('interactive_mode', true);
-    }
-
-    /**
-     * Validate package name for security (prevents command injection)
-     */
-    private function validatePackageName(string $packageName): void
-    {
-        // Composer package naming conventions: vendor/package with alphanumeric, hyphens, underscores, dots
-        if (!preg_match('/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9]([_.-]?[a-z0-9]+)*$/', $packageName)) {
-            throw new \InvalidArgumentException(
-                "Invalid package name format: {$packageName}. " .
-                "Must follow vendor/package naming convention."
-            );
-        }
-        
-        // Additional length check to prevent abuse
-        if (strlen($packageName) > 100) {
-            throw new \InvalidArgumentException("Package name too long: {$packageName}");
-        }
-    }
-
-    /**
-     * Verify package exists on Packagist and has conduit-component topic
-     */
-    private function verifyPackageEligibility(array $component): void
-    {
-        $this->info("🔍 Verifying package eligibility...");
-        
-        try {
-            // Check Packagist API to verify package exists
-            $client = new \GuzzleHttp\Client(['timeout' => 10]);
-            $response = $client->get("https://packagist.org/packages/{$component['full_name']}.json");
-            
-            if ($response->getStatusCode() !== 200) {
-                throw new \RuntimeException("Package '{$component['full_name']}' not found on Packagist");
-            }
-            
-            $packageData = json_decode($response->getBody()->getContents(), true);
-            
-            // Verify package has conduit-component topic
-            $keywords = $packageData['package']['keywords'] ?? [];
-            $requiredTopic = config('components.discovery.github_topic', 'conduit-component');
-            
-            if (!in_array($requiredTopic, $keywords)) {
-                throw new \RuntimeException(
-                    "Package '{$component['full_name']}' does not have required topic '{$requiredTopic}'. " .
-                    "Only verified Conduit components can be installed."
-                );
-            }
-            
-            $this->info("✅ Package verified as legitimate Conduit component");
-            
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            if ($e->getResponse()->getStatusCode() === 404) {
-                throw new \RuntimeException("Package '{$component['full_name']}' not found on Packagist");
-            }
-            throw new \RuntimeException("Failed to verify package: " . $e->getMessage());
-        } catch (\Exception $e) {
-            throw new \RuntimeException("Package verification failed: " . $e->getMessage());
-        }
     }
 
     /**
