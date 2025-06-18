@@ -167,6 +167,32 @@ class ComponentManager
         })->values()->toArray();
     }
 
+    /**
+     * Get a global setting value
+     */
+    public function getGlobalSetting(string $key, mixed $default = null): mixed
+    {
+        return config("components.settings.{$key}", $default);
+    }
+
+    /**
+     * Update a global setting value
+     */
+    public function updateGlobalSetting(string $key, mixed $value): void
+    {
+        $config = config('components', []);
+        $config['settings'][$key] = $value;
+        $this->writeComponentsConfig($config);
+    }
+
+    /**
+     * Get all global settings
+     */
+    public function getGlobalSettings(): array
+    {
+        return config('components.settings', []);
+    }
+
     protected function updateComponentsConfig(string $name, array $componentInfo): void
     {
         $config = config('components', []);

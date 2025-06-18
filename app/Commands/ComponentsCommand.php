@@ -29,8 +29,8 @@ class ComponentsCommand extends Command
         try {
             $action = $this->argument('action');
             
-            // If no action provided and not in non-interactive mode, show interactive menu
-            if (!$action && !$this->option('non-interactive')) {
+            // If no action provided and interactive mode is enabled, show interactive menu
+            if (!$action && $this->shouldBeInteractive($manager)) {
                 $choice = select(
                     label: 'What would you like to do?',
                     options: [
@@ -72,6 +72,7 @@ class ComponentsCommand extends Command
 
         if (empty($installed)) {
             $this->info('No components are currently installed.');
+            $this->showInteractiveStatus($manager);
             return Command::SUCCESS;
         }
 
@@ -92,6 +93,8 @@ class ComponentsCommand extends Command
         })->values()->toArray();
 
         table(['Name', 'Package', 'Version', 'Status', 'Installed'], $rows);
+
+        $this->showInteractiveStatus($manager);
 
         return Command::SUCCESS;
     }
@@ -168,7 +171,7 @@ class ComponentsCommand extends Command
             }
             
             // If no component name provided, show selection menu
-            if (!$componentName && !$this->option('non-interactive')) {
+            if (!$componentName && $this->shouldBeInteractive($manager)) {
                 $choices = [];
                 foreach ($availableComponents as $component) {
                     $description = \Illuminate\Support\Str::limit($component['description'], 60);
@@ -197,7 +200,7 @@ class ComponentsCommand extends Command
             }
             
             // Confirm installation
-            if (!$this->option('non-interactive')) {
+            if ($this->shouldBeInteractive($manager)) {
                 $component = $availableComponents[$componentName];
                 $confirmed = confirm(
                     label: "Install '{$componentName}' from {$component['full_name']}?",
@@ -287,7 +290,7 @@ class ComponentsCommand extends Command
         try {
             $componentName = $this->argument('component');
             
-            if (!$componentName && !$this->option('non-interactive')) {
+            if (!$componentName && $this->shouldBeInteractive($manager)) {
                 $installed = $manager->getInstalled();
                 if (empty($installed)) {
                     $this->info('No components are currently installed.');
@@ -312,7 +315,7 @@ class ComponentsCommand extends Command
             }
             
             // Confirm uninstallation
-            if (!$this->option('non-interactive')) {
+            if ($this->shouldBeInteractive($manager)) {
                 $confirmed = confirm(
                     label: "Are you sure you want to uninstall '{$componentName}'?",
                     default: false
@@ -443,5 +446,33 @@ class ComponentsCommand extends Command
         }
         
         return $commands;
+    }
+
+    /**
+     * Determine if commands should run in interactive mode
+     * 
+     * Checks global interactive mode setting but allows --non-interactive flag to override
+     */
+    private function shouldBeInteractive(ComponentManager $manager): bool
+    {
+        // --non-interactive flag always overrides global setting
+        if ($this->option('non-interactive')) {
+            return false;
+        }
+        
+        // Check global interactive mode setting (defaults to true)
+        return $manager->getGlobalSetting('interactive_mode', true);
+    }
+
+    /**
+     * Show current interactive mode status
+     */
+    private function showInteractiveStatus(ComponentManager $manager): void
+    {
+        $interactiveMode = $manager->getGlobalSetting('interactive_mode', true);
+        
+        $this->newLine();
+        $status = $interactiveMode ? '<fg=green>enabled</>' : '<fg=yellow>disabled</>';
+        $this->line("Interactive mode: {$status} <fg=gray>(conduit interactive enable|disable|status)</>");
     }
 }
