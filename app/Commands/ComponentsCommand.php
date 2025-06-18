@@ -451,7 +451,7 @@ class ComponentsCommand extends Command
     /**
      * Determine if commands should run in interactive mode
      * 
-     * Checks global interactive mode setting but allows --non-interactive flag to override
+     * Simple check: respect global setting, allow --non-interactive flag to override
      */
     private function shouldBeInteractive(ComponentManager $manager): bool
     {

@@ -23,7 +23,7 @@ return array (
       'url' => 'https://github.com/jordanpartridge/github-zero',
       'stars' => 0,
       'status' => 'active',
-      'installed_at' => '2025-06-18T04:03:53.477210Z',
+      'installed_at' => '2025-06-18T04:13:17.922977Z',
     ),
   ),
   'settings' => array (
