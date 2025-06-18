@@ -27,6 +27,6 @@ return array (
     ),
   ),
   'settings' => array (
-    'interactive_mode' => false,
+    'interactive_mode' => true,
   ),
 );
