@@ -465,14 +465,35 @@ class ComponentsCommand extends Command
     }
 
     /**
-     * Show current interactive mode status
+     * Show contextual interactive mode guidance
      */
     private function showInteractiveStatus(ComponentManager $manager): void
     {
         $interactiveMode = $manager->getGlobalSetting('interactive_mode', true);
+        $installed = $manager->getInstalled();
         
         $this->newLine();
-        $status = $interactiveMode ? '<fg=green>enabled</>' : '<fg=yellow>disabled</>';
-        $this->line("Interactive mode: {$status} <fg=gray>(conduit interactive enable|disable|status)</>");
+        
+        if (empty($installed)) {
+            // No components installed - show discovery guidance
+            if ($interactiveMode) {
+                $this->line('<fg=cyan>💡 No components installed yet!</>');
+                $this->line('   Run <fg=white>conduit components</> for interactive setup');
+                $this->line('   Or <fg=white>conduit components discover</> to browse available components');
+            } else {
+                $this->line('<fg=cyan>💡 No components installed yet!</>');
+                $this->line('   Run <fg=white>conduit components discover</> to browse available');
+                $this->line('   Or <fg=white>conduit components install <name></> to install directly');
+            }
+        } else {
+            // Components installed - show management guidance  
+            if ($interactiveMode) {
+                $this->line('<fg=green>✨ Interactive mode:</> <fg=white>conduit components</> shows menu');
+            } else {
+                $this->line('<fg=yellow>🤖 Non-interactive mode:</> specify actions like <fg=white>conduit components discover</>');
+            }
+        }
+        
+        $this->line('<fg=gray>   Toggle: conduit interactive enable|disable</>');
     }
 }
