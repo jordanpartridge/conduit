@@ -225,6 +225,9 @@ class ComponentsCommand extends Command
             // Validate package name for security
             $this->validatePackageName($component['full_name']);
             
+            // Verify package exists and has conduit-component topic
+            $this->verifyPackageEligibility($component);
+            
             // Use secure array-based Process to prevent command injection
             $composerResult = new \Symfony\Component\Process\Process([
                 'composer',
@@ -491,6 +494,47 @@ class ComponentsCommand extends Command
         // Additional length check to prevent abuse
         if (strlen($packageName) > 100) {
             throw new \InvalidArgumentException("Package name too long: {$packageName}");
+        }
+    }
+
+    /**
+     * Verify package exists on Packagist and has conduit-component topic
+     */
+    private function verifyPackageEligibility(array $component): void
+    {
+        $this->info("🔍 Verifying package eligibility...");
+        
+        try {
+            // Check Packagist API to verify package exists
+            $client = new \GuzzleHttp\Client(['timeout' => 10]);
+            $response = $client->get("https://packagist.org/packages/{$component['full_name']}.json");
+            
+            if ($response->getStatusCode() !== 200) {
+                throw new \RuntimeException("Package '{$component['full_name']}' not found on Packagist");
+            }
+            
+            $packageData = json_decode($response->getBody()->getContents(), true);
+            
+            // Verify package has conduit-component topic
+            $keywords = $packageData['package']['keywords'] ?? [];
+            $requiredTopic = config('components.discovery.github_topic', 'conduit-component');
+            
+            if (!in_array($requiredTopic, $keywords)) {
+                throw new \RuntimeException(
+                    "Package '{$component['full_name']}' does not have required topic '{$requiredTopic}'. " .
+                    "Only verified Conduit components can be installed."
+                );
+            }
+            
+            $this->info("✅ Package verified as legitimate Conduit component");
+            
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            if ($e->getResponse()->getStatusCode() === 404) {
+                throw new \RuntimeException("Package '{$component['full_name']}' not found on Packagist");
+            }
+            throw new \RuntimeException("Failed to verify package: " . $e->getMessage());
+        } catch (\Exception $e) {
+            throw new \RuntimeException("Package verification failed: " . $e->getMessage());
         }
     }
 
