@@ -2804,24 +2804,24 @@
         },
         {
             "name": "jordanpartridge/github-zero",
-            "version": "v1.0.4",
+            "version": "v1.1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jordanpartridge/github-zero.git",
-                "reference": "62763a9150e7ab9cae2e52eaf9d6195957f1955d"
+                "reference": "de2dfc8739c54301050adeeacd069d8da47b3fb3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jordanpartridge/github-zero/zipball/62763a9150e7ab9cae2e52eaf9d6195957f1955d",
-                "reference": "62763a9150e7ab9cae2e52eaf9d6195957f1955d",
+                "url": "https://api.github.com/repos/jordanpartridge/github-zero/zipball/de2dfc8739c54301050adeeacd069d8da47b3fb3",
+                "reference": "de2dfc8739c54301050adeeacd069d8da47b3fb3",
                 "shasum": ""
             },
             "require": {
-                "illuminate/collections": "^8.0|^9.0|^10.0|^11.0",
-                "illuminate/console": "^8.0|^9.0|^10.0|^11.0",
-                "jordanpartridge/github-client": "^0.3.1|^2.0.0",
+                "illuminate/collections": "^11.0",
+                "illuminate/console": "^11.0",
+                "jordanpartridge/github-client": "^2.0.0",
                 "laravel/prompts": "^0.1|^0.3",
-                "nesbot/carbon": "^2.0|^3.0",
+                "nesbot/carbon": "^3.0",
                 "php": "^8.2",
                 "symfony/console": "^6.0|^7.0"
             },
@@ -2872,9 +2872,9 @@
             ],
             "support": {
                 "issues": "https://github.com/jordanpartridge/github-zero/issues",
-                "source": "https://github.com/jordanpartridge/github-zero/tree/v1.0.4"
+                "source": "https://github.com/jordanpartridge/github-zero/tree/v1.1.0.1"
             },
-            "time": "2025-06-17T01:37:32+00:00"
+            "time": "2025-06-20T03:30:44+00:00"
         },
         {
             "name": "kelunik/certificate",
@@ -5268,16 +5268,16 @@
         },
         {
             "name": "spatie/laravel-data",
-            "version": "4.15.2",
+            "version": "4.15.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-data.git",
-                "reference": "50f5abe716ff1ad9a3e96dcfdeb4ad00f014bf8d"
+                "reference": "a33ddeb6bd9fd97447780ea9b4cc77dff94cf9b1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-data/zipball/50f5abe716ff1ad9a3e96dcfdeb4ad00f014bf8d",
-                "reference": "50f5abe716ff1ad9a3e96dcfdeb4ad00f014bf8d",
+                "url": "https://api.github.com/repos/spatie/laravel-data/zipball/a33ddeb6bd9fd97447780ea9b4cc77dff94cf9b1",
+                "reference": "a33ddeb6bd9fd97447780ea9b4cc77dff94cf9b1",
                 "shasum": ""
             },
             "require": {
@@ -5339,7 +5339,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-data/issues",
-                "source": "https://github.com/spatie/laravel-data/tree/4.15.2"
+                "source": "https://github.com/spatie/laravel-data/tree/4.15.3"
             },
             "funding": [
                 {
@@ -5347,7 +5347,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-06-12T09:42:08+00:00"
+            "time": "2025-06-19T15:34:37+00:00"
         },
         {
             "name": "spatie/laravel-package-tools",
@@ -8245,16 +8245,16 @@
         },
         {
             "name": "phpunit/php-code-coverage",
-            "version": "11.0.9",
+            "version": "11.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "14d63fbcca18457e49c6f8bebaa91a87e8e188d7"
+                "reference": "1a800a7446add2d79cc6b3c01c45381810367d76"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/14d63fbcca18457e49c6f8bebaa91a87e8e188d7",
-                "reference": "14d63fbcca18457e49c6f8bebaa91a87e8e188d7",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/1a800a7446add2d79cc6b3c01c45381810367d76",
+                "reference": "1a800a7446add2d79cc6b3c01c45381810367d76",
                 "shasum": ""
             },
             "require": {
@@ -8311,15 +8311,27 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
                 "security": "https://github.com/sebastianbergmann/php-code-coverage/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/11.0.9"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/show"
             },
             "funding": [
                 {
                     "url": "https://github.com/sebastianbergmann",
                     "type": "github"
+                },
+                {
+                    "url": "https://liberapay.com/sebastianbergmann",
+                    "type": "liberapay"
+                },
+                {
+                    "url": "https://thanks.dev/u/gh/sebastianbergmann",
+                    "type": "thanks_dev"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/phpunit/php-code-coverage",
+                    "type": "tidelift"
                 }
             ],
-            "time": "2025-02-25T13:26:39+00:00"
+            "time": "2025-06-18T08:56:18+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
