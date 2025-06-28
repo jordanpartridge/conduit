@@ -88,8 +88,15 @@ class SecurityTest extends TestCase
         // We can't easily test the actual process execution without side effects,
         // but we can verify the validation happens before execution
 
+        $maliciousComponent = new \App\ValueObjects\Component(
+            name: 'malicious',
+            fullName: 'malicious; rm -rf /',
+            description: 'Test malicious component',
+            url: 'https://example.com'
+        );
+
         $this->expectException(\InvalidArgumentException::class);
-        $installer->install(['full_name' => 'malicious; rm -rf /']);
+        $installer->install($maliciousComponent);
     }
 
     public function test_service_layer_separation()
